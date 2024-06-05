@@ -1,0 +1,26 @@
+package connection;
+
+import javax.swing.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class MyConnection {
+    public static final String DATABASE_URL = "jdbc:sqlserver://SAADI\\SQLEXPRESS01;databaseName=shopping;encrypt=true;trustServerCertificate=true";
+    public static final String DATABASE_USERNAME = "sa";
+    public static final String DATABASE_PASSWORD = "data123";
+    public static Connection con = null;
+
+    public static Connection getConnection() {
+        try {
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            con = DriverManager.getConnection(DATABASE_URL, DATABASE_USERNAME, DATABASE_PASSWORD);
+            System.out.println("Connection successful");
+        } catch (SQLException | ClassNotFoundException e) {
+            JOptionPane.showMessageDialog(null, "Connection not successful");
+            System.out.println("Connection not successful");
+            e.printStackTrace();
+        }
+        return con;
+    }
+}
