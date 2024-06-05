@@ -291,6 +291,13 @@ public class Category extends JFrame implements ActionListener {
         int rowsInserted = stmt.executeUpdate();
         if (rowsInserted > 0) {
             JOptionPane.showMessageDialog(null, "A new category was inserted successfully!");
+
+            // Create a new notification
+            String notificationContent = "A new category has been added: " + categoryName;
+            PreparedStatement psNotification = conn.prepareStatement("INSERT INTO notifications (content, seen) VALUES (?, ?)");
+            psNotification.setString(1, notificationContent);
+            psNotification.setBoolean(2, false); // The notification is not seen yet
+            psNotification.executeUpdate();
         }
 
     } catch (SQLException ex) {
