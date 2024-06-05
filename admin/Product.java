@@ -24,21 +24,30 @@ public class Product extends JFrame implements ActionListener {
     JComboBox<String> categoryComboBox;
 
 
-    public void loadProducts(JTable table) {
+    private void loadProducts(JTable table) {
         try {
-            Connection con = DriverManager.getConnection("jdbc:sqlserver://SAADI\\SQLEXPRESS01;databaseName=Shopping;user=sa;password=data123;encrypt=true;trustServerCertificate=true", "sa", "data123");
-            Statement stmt = con.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT * FROM product");
+            Connection con = DriverManager.getConnection("jdbc:sqlserver://SAADI\\SQLEXPRESS01;databaseName=Shopping;user=sa;password=data123;encrypt=true;trustServerCertificate=true");
 
-            // Get the table model
+            String sql = "SELECT pr.*, c.cname AS category_name FROM product pr " +
+                    "JOIN category c ON pr.cname = c.cname";
+
+            PreparedStatement stmt = con.prepareStatement(sql);
+
+            ResultSet rs = stmt.executeQuery();
+
             DefaultTableModel model = (DefaultTableModel) table.getModel();
 
-            // Clear the table
             model.setRowCount(0);
 
-            // Add rows to the table
             while (rs.next()) {
-                model.addRow(new Object[]{rs.getInt("pid"), rs.getString("pname"), rs.getString("cname"), rs.getInt("pqty"), rs.getFloat("pprice"), rs.getString("pimage")});
+                Object[] row = new Object[6];
+                row[0] = rs.getInt("pid");
+                row[1] = rs.getString("pname");
+                row[2] = rs.getString("category_name");
+                row[3] = rs.getInt("pqty");
+                row[4] = rs.getFloat("pprice");
+                row[5] = rs.getString("pimage");
+                model.addRow(row);
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -222,9 +231,9 @@ public class Product extends JFrame implements ActionListener {
             }
         });
         // Column names for the first table
-        String[] columnNames1 = {"Product ID", "Product Name", "Category", "Quantity", "Price", "Image"};
+        String[] columnNames1 = {"Product ID", "Product Name", "Category Name", "Quantity", "Price", "Image"};
 
-        DefaultTableModel model = new DefaultTableModel(new Object[]{"Product ID", "Product Name", "Category", "Quantity", "Price", "Image", "View Image"}, 0) {
+        DefaultTableModel model = new DefaultTableModel(new Object[]{"Product ID", "Product Name", "Category Name", "Quantity", "Price", "Image", "View Image"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 // Only the "View Image" column is editable
@@ -420,6 +429,14 @@ public boolean isValidInput() {
                     ps.setFloat(4, Float.parseFloat(pprice));
                     ps.setString(5, pimage);
                     ps.executeUpdate();
+
+                    // Create a new notification
+                    String notificationContent = "A new product has been added: " + pname;
+                    PreparedStatement psNotification = con.prepareStatement("INSERT INTO notifications (content, seen) VALUES (?, ?)");
+                    psNotification.setString(1, notificationContent);
+                    psNotification.setBoolean(2, false); // The notification is not seen yet
+                    psNotification.executeUpdate();
+
                     JOptionPane.showMessageDialog(null, "Product added successfully");
                 } catch (SQLException ex) {
                     ex.printStackTrace();
@@ -427,7 +444,6 @@ public boolean isValidInput() {
 
                 loadProducts(table);
             }
-
         }
         if(ae.getSource() == update){
 
