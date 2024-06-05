@@ -19,10 +19,50 @@ public class UserDashboard extends JFrame {
 
     JLabel purchase, purchasedetails, myaccount, logout;
     JTextField t2, t3;
+    JButton bellButton;
+    JPopupMenu popupMenu;
     static int userId;
     DefaultCategoryDataset dataset;
     ChartPanel chartPanel;
 
+   public void populatePopupMenu(int userId) {
+    try {
+        // Establish a connection
+        Connection conn = DriverManager.getConnection("jdbc:sqlserver://SAADI\\SQLEXPRESS01;databaseName=Shopping;user=sa;password=data123;encrypt=true;trustServerCertificate=true");
+
+        // Create a SQL query
+        String sql = "SELECT * FROM notifications WHERE id NOT IN (SELECT notification_id FROM user_notifications WHERE user_id = ?)";
+
+        // Create a statement
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setInt(1, userId);
+
+        // Execute the query
+        ResultSet rs = stmt.executeQuery();
+
+        // Create a new JPopupMenu
+        JPopupMenu newPopupMenu = new JPopupMenu();
+
+        // Loop through the result set and add a JMenuItem for each notification to the JPopupMenu
+        while (rs.next()) {
+            String content = rs.getString("content");
+            JMenuItem menuItem = new JMenuItem(content);
+            newPopupMenu.add(menuItem);
+
+            // Mark the notification as seen for this user
+            PreparedStatement psUpdate = conn.prepareStatement("INSERT INTO user_notifications (user_id, notification_id) VALUES (?, ?)");
+            psUpdate.setInt(1, userId);
+            psUpdate.setInt(2, rs.getInt("id"));
+            psUpdate.executeUpdate();
+        }
+
+        // Assign the new JPopupMenu to the instance variable
+        this.popupMenu = newPopupMenu;
+
+    } catch (SQLException ex) {
+        ex.printStackTrace();
+    }
+}
     UserDashboard(int userId) {
         this.userId = userId;
         setLayout(null);
@@ -158,6 +198,38 @@ public class UserDashboard extends JFrame {
             }
         });
 
+        // Create a popup menu
+       popupMenu = new JPopupMenu();
+
+        ImageIcon bellIcon = new ImageIcon(ClassLoader.getSystemResource("icons/bell.png"));
+        Image bellImage = bellIcon.getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT);
+        bellIcon = new ImageIcon(bellImage);
+        bellButton = new JButton(bellIcon);
+        bellButton.setBounds(800, 100, 30, 30);
+        bellButton.setContentAreaFilled(false);
+        image.add(bellButton);
+        bellButton.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent me) {
+                bellButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            }
+
+            public void mouseExited(MouseEvent me) {
+                bellButton.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+            }
+        });
+
+        bellButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Call the method to populate the popupMenu
+                populatePopupMenu(userId);
+
+                // Show the popupMenu
+                if (popupMenu != null) {
+                    popupMenu.show(bellButton, 0, bellButton.getHeight());
+                }
+            }
+        });
         ImageIcon powerIcon = new ImageIcon(ClassLoader.getSystemResource("icons/power.png"));
         Image powerImg = powerIcon.getImage().getScaledInstance(30, 30, Image.SCALE_DEFAULT);
         powerIcon = new ImageIcon(powerImg);
